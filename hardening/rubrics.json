@@ -1,0 +1,187 @@
+{
+  "version": "1.0",
+  "description": "Machine-readable quality rubrics. Each criterion has a target score (1-5) and automated check hints.",
+  "rubrics": {
+    "design_system": {
+      "title": "Design System",
+      "criteria": {
+        "atomic_design": {
+          "target": 4,
+          "description": "Atoms/molecules/organisms layer boundaries; composition over monoliths",
+          "auto_check": null,
+          "flags": ["no component hierarchy", "monolith features", "no layer boundaries"]
+        },
+        "design_tokens": {
+          "target": 5,
+          "description": "All values from tokens; no raw hex or magic numbers anywhere",
+          "auto_check": "grep -rE '#[0-9a-fA-F]{3,6}' src/",
+          "flags": ["raw hex values", "magic pixel numbers", "inline styles"]
+        },
+        "component_reuse": {
+          "target": 4,
+          "description": "Shared component library, variants via props, no copy-pasted components",
+          "auto_check": null,
+          "flags": ["copy-pasted components", "one-off variants"]
+        },
+        "spacing_layout": {
+          "target": 4,
+          "description": "Token-based spacing scale, layout primitives, mobile-first breakpoints",
+          "auto_check": "grep -rE 'margin:\\s*[0-9]+px|padding:\\s*[0-9]+px' src/",
+          "flags": ["arbitrary margins", "no grid system", "magic padding values"]
+        },
+        "typography": {
+          "target": 4,
+          "description": "Defined type scale xs-5xl, no raw font-size, font loading optimized",
+          "auto_check": "grep -rE 'font-size:\\s*[0-9]' src/",
+          "flags": ["random font sizes", "raw font-size values"]
+        }
+      }
+    },
+    "dry_solid_ssot_kiss": {
+      "title": "DRY / SOLID / SSOT / KISS",
+      "criteria": {
+        "code_duplication": {
+          "target": 4,
+          "description": "Shared hooks/utils for repeated patterns; near-zero duplication",
+          "auto_check": "jscpd src/ --min-lines 10 --min-tokens 100",
+          "flags": ["same logic in 2+ files", "no shared utilities"]
+        },
+        "single_responsibility": {
+          "target": 4,
+          "description": "Logic in hooks, UI in components, API layer separate",
+          "auto_check": null,
+          "flags": ["god components", "business logic in UI component", "fetch+render in one file"]
+        },
+        "source_of_truth": {
+          "target": 4,
+          "description": "Schema-driven types, single config source consumed everywhere",
+          "auto_check": null,
+          "flags": ["constants in multiple files", "types out of sync"]
+        },
+        "simplicity": {
+          "target": 4,
+          "description": "Minimal indirection, no dead code, naming conveys intent",
+          "auto_check": "eslint --rule '{complexity: [warn, 10], max-lines: [warn, 300]}'  src/",
+          "flags": ["premature abstractions", "dead code", "high cyclomatic complexity"]
+        }
+      }
+    },
+    "ux_accessibility": {
+      "title": "UX & Accessibility",
+      "criteria": {
+        "keyboard_navigation": {
+          "target": 4,
+          "description": "Logical tab order, focus management, skip links, ARIA roles on custom widgets",
+          "auto_check": "eslint-plugin-jsx-a11y",
+          "flags": ["no focus styles", "broken tab order", "modals don't trap focus"]
+        },
+        "semantic_html": {
+          "target": 4,
+          "description": "Landmarks, heading hierarchy, alt text, form labels, ARIA",
+          "auto_check": "grep -rn '<img' src/ | grep -v 'alt='",
+          "flags": ["div soup", "no landmarks", "missing alt text", "missing form labels"]
+        },
+        "visual_accessibility": {
+          "target": 4,
+          "description": "WCAG AA contrast (4.5:1), 44px touch targets, prefers-reduced-motion",
+          "auto_check": null,
+          "flags": ["low contrast", "color-only indicators", "no reduced-motion support"]
+        },
+        "loading_error_states": {
+          "target": 4,
+          "description": "Skeleton screens, contextual error messages, retry buttons",
+          "auto_check": null,
+          "flags": ["blank loading screens", "generic error messages", "no retry action"]
+        }
+      }
+    },
+    "performance": {
+      "title": "Performance",
+      "criteria": {
+        "bundle_size": {
+          "target": 4,
+          "description": "Dynamic imports, tree-shaken, per-route budgets, no barrel bloat",
+          "auto_check": "find dist -name '*.js' -exec wc -c {} +",
+          "thresholds": { "initial_js_bytes": 512000, "target_bytes": 102400 },
+          "flags": ["monolithic bundle", "no code splitting", "barrel index imports"]
+        },
+        "rendering_efficiency": {
+          "target": 4,
+          "description": "Proper keys, measured memoization, virtualized long lists",
+          "auto_check": "eslint-plugin-react-hooks",
+          "flags": ["missing list keys", "wrong deps arrays", "un-virtualized long lists"]
+        },
+        "data_fetching": {
+          "target": 4,
+          "description": "SWR/React Query, stale-while-revalidate, prefetching, no waterfalls",
+          "auto_check": null,
+          "flags": ["waterfall requests", "no caching", "duplicate fetches"]
+        },
+        "core_web_vitals": {
+          "target": 4,
+          "description": "LCP < 2.5s, CLS < 0.1, INP < 200ms, all CWV green",
+          "thresholds": { "lcp_ms": 2500, "cls": 0.1, "inp_ms": 200 },
+          "flags": ["LCP > 4s", "CLS > 0.1", "no performance monitoring"]
+        }
+      }
+    },
+    "bugs_correctness": {
+      "title": "Bugs & Correctness",
+      "criteria": {
+        "error_handling": {
+          "target": 4,
+          "description": "Error boundaries per feature, structured logging, user-friendly messages",
+          "auto_check": null,
+          "flags": ["no try/catch", "swallowed errors", "generic fallback only"]
+        },
+        "state_management": {
+          "target": 4,
+          "description": "Single store/context per domain, derived state, concurrent-safe updates",
+          "auto_check": null,
+          "flags": ["race conditions", "stale closures", "prop drilling 5+ levels"]
+        },
+        "edge_cases": {
+          "target": 4,
+          "description": "Empty states handled, boundary values tested, exhaustive switch/case",
+          "auto_check": null,
+          "flags": ["null crashes", "empty array broken UI", "happy path only tests"]
+        },
+        "type_safety": {
+          "target": 5,
+          "description": "Strict mode, no any, discriminated unions, exhaustive narrowing",
+          "auto_check": "grep -rn ': any\\b\\|as any\\b' src/",
+          "flags": ["any type", "as casts", "no strict mode", "non-null assertions"]
+        }
+      }
+    },
+    "security": {
+      "title": "Security",
+      "criteria": {
+        "input_sanitization": {
+          "target": 4,
+          "description": "Framework auto-escaping, parameterized queries, input validation schemas (arktype)",
+          "auto_check": "grep -rn 'dangerouslySetInnerHTML' src/",
+          "flags": ["raw innerHTML", "SQL concatenation", "dangerouslySetInnerHTML without sanitization"]
+        },
+        "auth_sessions": {
+          "target": 4,
+          "description": "HttpOnly cookies, token refresh, CSRF tokens, role-based access on API routes",
+          "auto_check": "grep -rn 'localStorage' src/ | grep -iE 'token|auth|session|jwt'",
+          "flags": ["tokens in localStorage", "no CSRF protection", "weak session expiry"]
+        },
+        "dependency_security": {
+          "target": 4,
+          "description": "Automated audit gate in CI, critical CVEs patched within a week",
+          "auto_check": "bun audit --audit-level high",
+          "flags": ["no lock file", "known CVEs ignored", "no audit in CI"]
+        },
+        "secrets_management": {
+          "target": 4,
+          "description": "Env vars via hosting platform, server-only access, no hardcoded keys",
+          "auto_check": "gitleaks detect",
+          "flags": ["hardcoded API keys", "secrets in source", ".env committed to git"]
+        }
+      }
+    }
+  }
+}

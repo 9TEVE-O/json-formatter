@@ -1,0 +1,89 @@
+name: Hardening Checks
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+concurrency:
+  group: hardening-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Bugs & Correctness: TypeScript ──────────────────────────────────────
+  type-check:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun tsc --noEmit
+
+  # ── Security + DRY + A11y + Performance: ESLint hardening ───────────────
+  lint:
+    name: ESLint Hardening
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Install lint deps
+        run: |
+          bun add -d eslint typescript-eslint \
+            eslint-plugin-jsx-a11y \
+            eslint-plugin-react-hooks \
+            eslint-plugin-security
+      - name: Run hardening lint
+        run: |
+          bun eslint \
+            --config hardening/eslint.config.js \
+            --ext .ts,.tsx \
+            $(find . -name '*.ts' -o -name '*.tsx' | grep -v node_modules | grep -v dist | head -200)
+
+  # ── Security: dependency CVE scan ───────────────────────────────────────
+  audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun audit --audit-level high
+
+  # ── Security: secret scanning ────────────────────────────────────────────
+  secrets:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Performance: bundle size gate ────────────────────────────────────────
+  bundle:
+    name: Bundle Size
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Enforce bundle size limit (500 KB)
+        run: |
+          if [ ! -d dist ]; then
+            echo "No dist/ directory found — skipping bundle check"
+            exit 0
+          fi
+          BUNDLE_BYTES=$(find dist -name '*.js' -not -name '*.map' -exec wc -c {} + 2>/dev/null \
+            | tail -1 | awk '{print $1}')
+          MAX_BYTES=512000
+          echo "Total JS: ${BUNDLE_BYTES} bytes (limit: ${MAX_BYTES} bytes)"
+          if [ "${BUNDLE_BYTES}" -gt "${MAX_BYTES}" ]; then
+            echo "Bundle exceeds ${MAX_BYTES} bytes — optimise imports or add code splitting"
+            exit 1
+          fi
+          echo "Bundle within limit."
