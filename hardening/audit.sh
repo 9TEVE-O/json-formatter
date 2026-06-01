@@ -49,7 +49,7 @@ fi
 
 # ── Security: no hardcoded secrets ─────────────────────────────────────────
 section "Security — Hardcoded secrets"
-SECRET_PATTERN='(api[_-]?key|secret|password|token|private[_-]?key)\s*[:=]\s*["\x27][^"\x27]{8,}'
+SECRET_PATTERN="(api[_-]?key|secret|password|token|private[_-]?key)\\s*[:=]\\s*[\"'][^\"']{8,}"
 if [ -d src ]; then
   SECRET_HITS=$(grep -rniE "$SECRET_PATTERN" src --include='*.ts' --include='*.tsx' --include='*.js' 2>/dev/null \
     | grep -v 'process\.env\.' \
