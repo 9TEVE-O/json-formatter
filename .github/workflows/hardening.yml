@@ -38,7 +38,6 @@ jobs:
         run: |
           bun eslint \
             --config hardening/eslint.config.js \
-            --ext .ts,.tsx \
             $(find . -name '*.ts' -o -name '*.tsx' | grep -v node_modules | grep -v dist | head -200)
 
   # ── Security: dependency CVE scan ───────────────────────────────────────
